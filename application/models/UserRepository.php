@@ -5,12 +5,13 @@ class UserRepository extends DbRepository
   public function insert($user_name, $password)
   {
     $password = $this->hashPassword($password);
-    $now = newDateTime();
+    date_default_timezone_set('Asia/Tokyo');
+    $now = new DateTime();
+
+    $sql = " INSERT INTO user(user_name, password, created_at) VALUES(:user_name, :password, :created_at)";
     
-    $sql = "insert into user (user_name, password, created_at) value
-            (:user_name, :password, :created_at)";
-    $stmt = $this->excute($sql, array(
-              ':user_nama' => $user_name,
+    $stmt = $this->execute($sql, array(
+              ':user_name' => $user_name,
               ':password' => $password,
               ':created_at' => $now->format('Y-m-d H:i:s'),
             ));
@@ -23,7 +24,7 @@ class UserRepository extends DbRepository
   
   public function fetchByUserName($user_name)
   {
-    $sql = "select * from user where user_name = :user_name";
+    $sql = "SELECT * FROM user WHERE user_name = :user_name";
     return $this->fetch($sql, array(':user_name' => $user_name));
   
   }
@@ -31,7 +32,7 @@ class UserRepository extends DbRepository
   public function isUniqueUserName($user_name)
   {
   
-    $sql = "select count(id) as count from user where user_name = :user_name";
+    $sql = "SELECT COUNT(id) as count FROM user WHERE user_name = :user_name";
     $row = $this->fetch($sql, array(':user_name' => $user_name));
     if ($row['count'] === '0') {
       return true;
@@ -39,4 +40,16 @@ class UserRepository extends DbRepository
     
     return false;
   }
+  
+  public function fetchAllFollowingsByUserId($user_id)
+  {
+    $sql = " 
+         SELECT u.*
+		 FROM user u
+		 LEFT JOIN following f ON f.following_id = u.id
+		 WHERE f.user_id = :user_id
+		 ";
+		
+	return $this->fetchAll($sql, array(':user_id' => $user_id));
+  }	
 }

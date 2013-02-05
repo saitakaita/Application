@@ -14,6 +14,14 @@ class MiniBlogApplication extends Application
     return array(
       '/'
         => array('controller' => 'status', 'action' =>'index'),
+      '/test'
+        => array('controller' => 'test', 'action' =>'index'),
+      '/status/post'
+        => array('controller' => 'status', 'action' => 'post'),
+      '/user/:user_name'
+        => array('controller' => 'status', 'action' => 'user'),
+      '/user/:user_name/status/:id'
+        => array('controller' => 'status', 'action' => 'show'),      
       '/account'
         => array('controller' => 'account', 'action' =>'index'),
       '/account/:action'
@@ -21,7 +29,7 @@ class MiniBlogApplication extends Application
     );
   }
   
-  protected function configure()
+  public function configure()
   {
     $this->db_manager->connect('master', array(
       'dsn'      => 'mysql:dbname=test;host=localhost',

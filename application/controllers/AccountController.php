@@ -2,45 +2,52 @@
 
 class AccountController extends Controller
 {
+  protected $auth_actions = array('index', 'signout');
+  
   public function signupAction()
   {
+  if ($this->session->isAuthenticated()) {
+    return $this->redirect('/account');
+  }
     return $this->render(array(
       'user_name' => '',
       'password'  => '',
       '_token' =>$this->generateCsrfToken('account/signup'),
     ));
   
-  }
+  }  
   
-  pbulic function registerAction()
+  public function registerAction()
   {
+   if($this->session->isAuthenticated()){
+      return $this->redirect('/account');
+    }
     if (!$this->request->isPost()) {
       $this->forward404();
     }
-  }
+  
   
   $token = $this->request->getPost('_token');
-  if (!$this>checkCsrfToken('account/signup',$token)) {
+  if (!$this->checkCsrfToken('account/signup',$token)) {
     return $this->redirect('/account/signup');
   }
   
   $user_name = $this->request->getPost('user_name');
-  $password = $this->request->getPost('password');
+  $password = $this->request->getPost('password');  
   
   $errors = array();
   
   if (!strlen($user_name)) {
-    $error[] = 'ユーザーIDを入力してください';
+    $errors[] = 'ユーザーIDを入力してください';
   } else if (!preg_match('/^\w{3,20}$/',$user_name)) {
-    $error[] = 'ユーザーIDは半角英数字およびアンダースコアを３〜２０文字以内で入力してください';
+    $errors[] = 'ユーザーIDは半角英数字およびアンダースコアを３〜２０文字以内で入力してください';
   } else if (!$this->db_manager->get('User')->isUniqueUserName($user_name)) {
-    $error[] = 'ユーザーIDは既に使用されています';
-  }
-  
+    $errors[] = 'ユーザーIDは既に使用されています';
+  }  
   if (!strlen($password)) {
-    $error[] = 'パスワードを入力してください';
+    $errors[] = 'パスワードを入力してください';
   } else if (4 > strlen($password) || strlen($password) > 30) {
-    $error[] = 'パスワードは４〜３０文字以内で入力してください';
+    $errors[] = 'パスワードは４〜３０文字以内で入力してください';
   }
   
   if (count($errors) === 0 ) {
@@ -53,7 +60,6 @@ class AccountController extends Controller
     return $this->redirect('/');
   
   }
-  
   return $this->render(array(
     'user_name' => $user_name,
     'password'  => $password,
@@ -62,5 +68,113 @@ class AccountController extends Controller
     ),'signup');
   }
   
+  public function indexAction()
+  {
+    $user = $this->session->get('user');
+    return $this->render(array('user' => $user));
+  }
+  
+  public function signinAction()
+  {
+    if ($this->session->isAuthenticated()) {
+      return $this->redirect('/account');
+    }
+    return $this->render(array(
+      'user_name'   => '',
+      'password' => '',
+      '_token' => $this->generateCsrfToken('account/signin'),
+    ));
+  }
+  
+  public function authenticateAction()
+  {
+    if ($this->session->isAuthenticated()) {
+      return $this->redirect('/account');
+    }
+    
+    if (!$this->request->isPost()) {
+      $this->forward404();
+    }
+    
+    $token = $this->request->getPost('_token');
+    if (!$this->checkCsrfToken('account/signin', $token)) {
+      return $this->redirect('/account/signin');
+    }
+    
+    $user_name = $this->request->getPost('user_name');
+    $password = $this->request->getPost('password');
+    
+    $errors = array();
+    
+    if (!strlen($user_name)) {
+      $errors[] = 'ユーザーIDを入力してください';
+    }
+    if (!strlen($password)) {
+      $errors[] = 'パスワードを入力してください';
+    }
+    if (count($errors)===0) {
+      
+      $user_repository = $this->db_manager->get('User');
+      $user = $user_repository->fetchByUserName($user_name);
+      
+      if (!$user || ($user['password'] !== $user_repository->hashPassword($password))) {
+        $errors[] = 'ユーザーIDかパスワードが不正です';
+      } else {
+        $this->session->setAuthenticated(true);
+        $this->session->set('user', $user);
+      
+        return $this->redirect('/');
+      }
+      
+    }
+    
+    return $this->render(array(
+      'user_name'  => $user_name,
+      'password'   => $password,
+      'errors'     => $errors,
+      '_token'     => $this->generateCsrfToken('account/signin'),
+    ), 'signin');
+  }
+  
+  public function signoutAction()
+  {
+    $this->session->clear();
+    $this->session->setAuthenticated(false);
+    
+    return $this->redirect('/account/signin');
+  
+  }
 
 } 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
